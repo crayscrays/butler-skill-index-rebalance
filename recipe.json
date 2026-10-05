@@ -1,0 +1,79 @@
+{
+  "id": "index-rebalance",
+  "version": 1,
+  "description": "Hold a basket of tokens at target weights: sell what has run ahead into USDC and buy what has lagged whenever any leg drifts out of band.",
+  "keywords": ["index", "basket", "rebalance", "weights", "portfolio", "equal weight", "drift"],
+  "triggers": ["timer"],
+  "keys": [
+    "index:<duty>:seed:<leg>",
+    "index:<duty>:<slot>:sell:<leg>",
+    "index:<duty>:<slot>:buy:<leg>"
+  ],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["LEGS"],
+    "properties": {
+      "LEGS": {
+        "type": "array",
+        "description": "The basket: 2 to 15 tokens. Every WEIGHT is a percent and they must add up to 100 (within 0.5). Fewer, more, or a different sum and the duty does nothing until it is fixed.",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["SYMBOL", "CHAIN_ID", "WEIGHT"],
+          "properties": {
+            "SYMBOL": {
+              "type": "string",
+              "description": "The ticker, without a leading $. Used for labels, and as the token reference only for a chain's own coin.",
+              "minLength": 1,
+              "maxLength": 20
+            },
+            "ADDRESS": {
+              "type": "string",
+              "description": "The exact contract address (EVM) or mint (Solana). Left out only for ETH, BNB or SOL held as a chain's own coin.",
+              "maxLength": 64
+            },
+            "CHAIN_ID": {
+              "type": "integer",
+              "description": "The chain the contract lives on: 1 Ethereum, 56 BNB, 8453 Base, 42161 Arbitrum, 4663 Virtuals, 1151111081099710 Solana."
+            },
+            "WEIGHT": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "This token's target share of the index, in percent of the whole basket."
+            }
+          }
+        }
+      },
+      "SEED_USD": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100000,
+        "default": 0,
+        "description": "USD spent once, on the first fire, buying the whole basket at its target weights. 0 adopts whatever the owner already holds of these tokens instead, and buys nothing."
+      },
+      "BAND_PCT": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 50,
+        "default": 5,
+        "description": "Percentage POINTS of drift tolerated before a rebalance: a 33% leg at 39% is 6 points out. Below this, the fire does nothing."
+      },
+      "MIN_TRADE_USD": {
+        "type": "number",
+        "minimum": 2,
+        "maximum": 1000,
+        "default": 10,
+        "description": "USD below which a leg's correction is skipped rather than traded. Floored at 2, the swap route's own minimum."
+      },
+      "MAX_REBALANCE_USD": {
+        "type": "number",
+        "minimum": 10,
+        "maximum": 100000,
+        "default": 2000,
+        "description": "USD ceiling on what one rebalance sells. The buys are funded only by those sells, so this caps the whole correction."
+      }
+    }
+  }
+}
